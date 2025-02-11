@@ -56,6 +56,7 @@ func (s *PostService) CreatePost(title string, content string, authorID uint, ca
 func (s *PostService) GetPosts(pagination *utils.Pagination) ([]models.Post, int64, error) {
 	var posts []models.Post
 	var totalPosts int64
+
 	// 构建查询
 	query := config.DB.Preload("Tags", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id, name")
@@ -63,7 +64,7 @@ func (s *PostService) GetPosts(pagination *utils.Pagination) ([]models.Post, int
 		return db.Select("id, name")
 	}).Preload("Author", func(db *gorm.DB) *gorm.DB {
 		return db.Select("id, nickname, username")
-	}).Order("created_at DESC")
+	}).Order("created_at DESC, id DESC")
 
 	// 获取总数
 	if err := query.Model(&models.Post{}).Count(&totalPosts).Error; err != nil {
@@ -96,4 +97,25 @@ func (s *PostService) GetPostByID(id string) (*models.Post, error) {
 		return nil, err
 	}
 	return &post, nil
+}
+
+// DeletePost 根据 ID 删除文章
+func (s *PostService) DeletePost(id uint) error {
+	// 检查文章是否存在
+	var post models.Post
+	if err := config.DB.First(&post, id).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("post with ID %d not found", id)
+		}
+		utils.LogError(fmt.Sprintf("Failed to find post with ID %d", id), err)
+		return fmt.Errorf("failed to find post: %w", err)
+	}
+
+	// 删除文章
+	if err := config.DB.Delete(&post).Error; err != nil {
+		utils.LogError(fmt.Sprintf("Failed to delete post with ID %d", id), err)
+		return fmt.Errorf("failed to delete post: %w", err)
+	}
+
+	return nil
 }

@@ -1,9 +1,11 @@
 package controllers
 
 import (
+	"fmt"
 	"go_core/services"
 	"go_core/utils"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -56,7 +58,6 @@ func GetAllPosts(c *gin.Context) {
 
 }
 
-// GetAllPosts 用于分页查询所有文章
 // GetPostByID 用于根据 ID 查询单篇文章
 func GetPostByID(c *gin.Context) {
 	// 获取查询参数中的 id
@@ -80,4 +81,33 @@ func GetPostByID(c *gin.Context) {
 
 	// 返回单篇文章
 	utils.RespondSuccess(c, post, nil)
+}
+
+// DeletePost 处理删除文章的请求
+func DeletePost(c *gin.Context) {
+	// 从 URL 参数中获取文章 ID
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+
+	// 调用服务层删除文章
+	err = postService.DeletePost(uint(id))
+	if err != nil {
+		// 文章未找到的情况
+		if err.Error() == fmt.Sprintf("post with ID %d not found", id) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+			return
+		}
+
+		// 其他错误
+		utils.LogError("Failed to delete post", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete post"})
+		return
+	}
+
+	// 删除成功
+	c.JSON(http.StatusOK, gin.H{"message": "Post deleted successfully"})
 }

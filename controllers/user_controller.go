@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"fmt"
 	"go_core/models"
 	"go_core/services"
 	"net/http"
@@ -43,19 +42,25 @@ func RegisterUser(c *gin.Context) {
 
 // Login 用户登录接口，生成 JWT Token
 func LoginUser(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	type LoginRequest struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	var loginReq LoginRequest
+	if err := c.ShouldBindJSON(&loginReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input"})
 		return
 	}
+	var user models.User
+	user.Username = loginReq.Username
+	user.Password = loginReq.Password
+
 	// 查找用户
 	dbUser, err := services.GetUserByUsername(user.Username)
-	fmt.Println(dbUser, err)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "Invalid email or password", "code": 404})
 		return
 	}
-
 	// 验证密码
 	if !services.CheckPassword(dbUser.Password, user.Password) {
 		c.JSON(http.StatusOK, gin.H{"message": "Invalid Password or password", "code": 404})

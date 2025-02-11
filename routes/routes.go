@@ -31,10 +31,8 @@ func SetupRouter() *gin.Engine {
 	// 文章相关的路由
 	protected.POST("/posts", controllers.CreatePost)     // 创建文章
 	protected.GET("/posts", controllers.GetAllPosts)     // 获取所有文章
-	protected.GET("/posts/:id", controllers.GetPostByID) // 获取所有文章
-	// protected.GET("/posts/:id", controllers.GetPost)       // 获取单篇文章
-	// protected.PUT("/posts/:id", controllers.UpdatePost)    // 更新文章
-	// protected.DELETE("/posts/:id", controllers.DeletePost) // 删除文章
+	protected.GET("/posts/:id", controllers.GetPostByID) // 获取单篇文章
+	protected.DELETE("/posts/:id", controllers.DeletePost)
 	protected.Use(middlewares.AuthMiddleware())
 
 	{

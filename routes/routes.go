@@ -21,7 +21,11 @@ func SetupRouter() *gin.Engine {
 	// 使用 CORS 中间件
 	r.Use(cors.New(corsConfig))
 	r.Use(middlewares.Logger())
-	// Public routes
+
+	// WebSocket 路由
+	r.GET("/ws", func(c *gin.Context) {
+		controllers.HandleWebSocket(c.Writer, c.Request)
+	})
 
 	// Protected routes
 	protected := r.Group("/api")

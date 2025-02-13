@@ -10,7 +10,6 @@ import (
 
 func RegisterUser(c *gin.Context) {
 	var request struct {
-		NickName string `json:"nickname" binding:"required"`
 		Username string `json:"username" binding:"required"`
 		Password string `json:"password" binding:"required"`
 	}
@@ -22,7 +21,6 @@ func RegisterUser(c *gin.Context) {
 
 	// Create a new user object
 	user := models.User{
-		NickName: request.NickName,
 		Username: request.Username,
 		Password: request.Password,
 	}

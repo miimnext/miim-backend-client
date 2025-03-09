@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"fmt"
+	"go_core/config"
+	"go_core/models"
 	"go_core/services"
 	"go_core/utils"
 	"net/http"
@@ -83,6 +85,27 @@ func GetPostByID(c *gin.Context) {
 	utils.RespondSuccess(c, post, nil)
 }
 
+// GetPostByID 用于根据 ID 查询单篇文章
+func GetPostsByUser(c *gin.Context) {
+	// 获取查询参数中的 id
+	id := c.Param("id") // 从路径参数中获取 id
+	pagination := utils.GetPagination(c)
+	// 获取分页参数
+	// 查询文章数据
+	posts, totalPosts, err := postService.GetPostsByUser(&pagination, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query posts"})
+		return
+	}
+
+	utils.RespondSuccess(c, gin.H{"list": posts}, &utils.Pagination{
+		Page:     pagination.Page,
+		PageSize: pagination.PageSize,
+		Total:    totalPosts,
+	})
+
+}
+
 // DeletePost 处理删除文章的请求
 func DeletePost(c *gin.Context) {
 	// 从 URL 参数中获取文章 ID
@@ -110,4 +133,26 @@ func DeletePost(c *gin.Context) {
 
 	// 删除成功
 	c.JSON(http.StatusOK, gin.H{"message": "Post deleted successfully"})
+}
+
+func GetTags(c *gin.Context) {
+	var tags []models.Tag // 定义一个用于存储查询结果的切片
+	// 查询所有 tags
+	if err := config.DB.Find(&tags).Error; err != nil {
+		// 返回错误信息
+		utils.RespondFailed(c, "Could not fetch tags")
+		return
+	}
+	utils.RespondSuccess(c, tags, nil)
+}
+
+func GetCategorys(c *gin.Context) {
+	var category []models.Category // 定义一个用于存储查询结果的切片
+	// 查询所有 tags
+	if err := config.DB.Find(&category).Error; err != nil {
+		// 返回错误信息
+		utils.RespondFailed(c, "Could not fetch tags")
+		return
+	}
+	utils.RespondSuccess(c, category, nil)
 }

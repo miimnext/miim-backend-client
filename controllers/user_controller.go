@@ -3,10 +3,19 @@ package controllers
 import (
 	"go_core/models"
 	"go_core/services"
+	"go_core/utils"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
+
+type UserInfo struct {
+	ID       uint   `json:"id"`
+	NickName string `json:"nickName"`
+	Username string `json:"userName"`
+	Balance  uint   `json:"balance"`
+	Token    string `json:"token,omitempty"`
+}
 
 func RegisterUser(c *gin.Context) {
 	var request struct {
@@ -15,7 +24,7 @@ func RegisterUser(c *gin.Context) {
 	}
 	// Bind JSON input to the request struct
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input", "error": err.Error()})
+		utils.RespondFailed(c, "Invalid input")
 		return
 	}
 
@@ -28,14 +37,18 @@ func RegisterUser(c *gin.Context) {
 	// Call the service layer to create the user
 	createdUser, err := services.CreateUser(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		utils.RespondFailed(c, err.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"message": "User created successfully",
-		"user":    createdUser,
-	})
+	// 生成 Token
+	token, err := services.GenerateToken(createdUser)
+	if err != nil {
+		utils.RespondFailed(c, "Could not generate token")
+		return
+	}
+	// 返回 token
+	utils.RespondSuccess(c, gin.H{"token": token}, nil)
 }
 
 // Login 用户登录接口，生成 JWT Token
@@ -46,7 +59,7 @@ func LoginUser(c *gin.Context) {
 	}
 	var loginReq LoginRequest
 	if err := c.ShouldBindJSON(&loginReq); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid input"})
+		utils.RespondFailed(c, "Invalid input")
 		return
 	}
 	var user models.User
@@ -56,35 +69,24 @@ func LoginUser(c *gin.Context) {
 	// 查找用户
 	dbUser, err := services.GetUserByUsername(user.Username)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "Invalid email or password", "code": 404})
+		utils.RespondFailed(c, "用户名密码错误")
 		return
 	}
 	// 验证密码
 	if !services.CheckPassword(dbUser.Password, user.Password) {
-		c.JSON(http.StatusOK, gin.H{"message": "Invalid Password or password", "code": 404})
+		utils.RespondFailed(c, "用户名密码错误")
 		return
 	}
 
 	// 生成 Token
 	token, err := services.GenerateToken(*dbUser)
 	if err != nil {
-		c.JSON(http.StatusOK, gin.H{"message": "Could not generate token", "code": 404})
+		utils.RespondFailed(c, "Could not generate token")
 		return
 	}
-	type UserInfo struct {
-		ID       uint
-		NickName string
-		Username string
-		Balance  uint
-	}
-	userInfo := UserInfo{
-		ID:       dbUser.ID,
-		NickName: dbUser.NickName,
-		Username: dbUser.Username,
-		Balance:  dbUser.Balance,
-	}
+
 	// 返回 token
-	c.JSON(http.StatusOK, gin.H{"token": token, "code": 200, "data": userInfo})
+	utils.RespondSuccess(c, gin.H{"token": token}, nil)
 }
 
 func GetAllUser(c *gin.Context) {
@@ -96,4 +98,30 @@ func GetAllUser(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, users) // Return the game as JSON
+}
+
+func GetUserInfo(c *gin.Context) {
+	// 从上下文中获取用户信息
+	user, exists := c.Get("user")
+	if !exists {
+		// 如果用户信息不存在，返回 404 错误
+		utils.RespondFailed(c, "User not found")
+		return
+	}
+
+	// 假设 user 是 *models.User 类型，进行类型断言
+	userInfo, ok := user.(*models.User)
+	if !ok {
+		// 如果类型断言失败，返回 400 错误
+		utils.RespondFailed(c, "Invalid user data")
+		return
+	}
+
+	data := UserInfo{
+		ID:       userInfo.ID,
+		Username: userInfo.Username,
+		NickName: userInfo.NickName,
+		Balance:  userInfo.Balance,
+	}
+	utils.RespondSuccess(c, data, nil)
 }

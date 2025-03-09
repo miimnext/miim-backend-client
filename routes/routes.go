@@ -31,16 +31,18 @@ func SetupRouter() *gin.Engine {
 	protected := r.Group("/api")
 	protected.POST("/register", controllers.RegisterUser)
 	protected.POST("/login", controllers.LoginUser)
+	protected.GET("/posts", controllers.GetAllPosts)
+	protected.GET("/postsByUser/:id", controllers.GetPostsByUser)
 
-	// 文章相关的路由
-	protected.POST("/posts", controllers.CreatePost)     // 创建文章
-	protected.GET("/posts", controllers.GetAllPosts)     // 获取所有文章
-	protected.GET("/posts/:id", controllers.GetPostByID) // 获取单篇文章
+	protected.GET("/tags", controllers.GetTags)
+	protected.GET("/categorys", controllers.GetCategorys)
+	protected.GET("/posts/:id", controllers.GetPostByID)
 	protected.DELETE("/posts/:id", controllers.DeletePost)
 	protected.Use(middlewares.AuthMiddleware())
-
 	{
 		protected.Use(middlewares.TokenAuthMiddleware())
+		protected.POST("/posts", controllers.CreatePost)
+		protected.GET("/userinfo", controllers.GetUserInfo)
 		protected.GET("/users", controllers.GetAllUser)
 		protected.POST("/upload", controllers.UploadFile)
 	}

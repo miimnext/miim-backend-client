@@ -9,8 +9,8 @@ import (
 func RespondSuccess(c *gin.Context, data interface{}, pagination *Pagination) {
 	// 构建基础的响应数据
 	response := Response{
-		Status:  http.StatusOK,
-		Message: "Request succeeded",
+		Code:    200,
+		Message: "Success",
 	}
 
 	// 如果传递了 data，则直接将其添加到响应中，而不做额外处理

@@ -99,6 +99,37 @@ func (s *PostService) GetPostByID(id string) (*models.Post, error) {
 	return &post, nil
 }
 
+func (s *PostService) GetPostsByUser(pagination *utils.Pagination, id string) ([]models.Post, int64, error) {
+	var posts []models.Post
+	var totalPosts int64
+	// 打印 SQL 语句
+	// 查询该用户名的所有帖子
+	query := config.DB.Preload("Categories").Preload("Tags").Preload("Author").Where("author_id= ?", id).Order("created_at DESC, id DESC")
+	fmt.Println(query.Statement.SQL.String()) // 打印 SQL 语句
+
+	// 获取总数
+	if err := query.Model(&models.Post{}).Count(&totalPosts).Error; err != nil {
+		utils.LogError("Failed to count posts", err)
+		return nil, 0, fmt.Errorf("failed to count posts: %w", err)
+	}
+
+	// 获取分页数据
+	offset, limit := pagination.Paginate()
+	// 设置最大 limit，防止查询过多数据
+	const maxLimit = 100
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+
+	// 获取分页数据
+	if err := query.Offset(offset).Limit(limit).Find(&posts).Error; err != nil {
+		utils.LogError("Failed to fetch posts", err)
+		return nil, 0, fmt.Errorf("failed to fetch posts: %w", err)
+	}
+
+	return posts, totalPosts, nil
+}
+
 // DeletePost 根据 ID 删除文章
 func (s *PostService) DeletePost(id uint) error {
 	// 检查文章是否存在

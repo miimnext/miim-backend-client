@@ -17,11 +17,11 @@ var postService services.PostService
 // CreatePost 用于创建文章
 func CreatePost(c *gin.Context) {
 	var input struct {
-		Title       string `json:"title"`
-		Content     string `json:"content"`
-		AuthorID    uint   `json:"author_id"`
-		CategoryIDs []uint `json:"category_ids"` // 支持多个 CategoryID
-		TagIDs      []uint `json:"tag_ids"`      // 支持多个 TagID
+		Title      string `json:"title"`
+		Content    string `json:"content"`
+		AuthorID   uint   `json:"author_id"`
+		CategoryID uint   `json:"category_id"`
+		TagIDs     []uint `json:"tag_ids"` // 支持多个 TagID
 	}
 
 	// 绑定输入数据
@@ -31,7 +31,7 @@ func CreatePost(c *gin.Context) {
 	}
 
 	// 调用服务层进行创建
-	if err := postService.CreatePost(input.Title, input.Content, input.AuthorID, input.CategoryIDs, input.TagIDs); err != nil {
+	if err := postService.CreatePost(input.Title, input.Content, input.AuthorID, input.CategoryID, input.TagIDs); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
@@ -51,13 +51,31 @@ func GetAllPosts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query posts"})
 		return
 	}
+	// 从上下文中获取用户信息
+	user, exists := c.Get("user")
+	if exists {
 
+		userInfo, ok := user.(*services.Claims)
+		if ok {
+
+			// 用户已登录，加载用户的点赞状态
+			for i := range posts {
+				reactionType, err := services.GetPostReactionByUser(posts[i].ID, userInfo.ID)
+				if err != nil {
+					// c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check post reaction"})
+					// return
+					// fmt.Println("333333333")
+				}
+				fmt.Println("333333333", reactionType)
+				posts[i].ReactionType = reactionType // 可选：保存点赞/点踩的类型
+			}
+		}
+	}
 	utils.RespondSuccess(c, gin.H{"list": posts}, &utils.Pagination{
 		Page:     pagination.Page,
 		PageSize: pagination.PageSize,
 		Total:    totalPosts,
 	})
-
 }
 
 // GetPostByID 用于根据 ID 查询单篇文章

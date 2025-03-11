@@ -5,16 +5,19 @@ import (
 	"go_core/services"
 	"go_core/utils"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 type UserInfo struct {
-	ID       uint   `json:"id"`
-	NickName string `json:"nickName"`
-	Username string `json:"userName"`
-	Balance  uint   `json:"balance"`
-	Token    string `json:"token,omitempty"`
+	ID        uint      `json:"id"`
+	NickName  string    `json:"nickName"`
+	Username  string    `json:"userName"`
+	Avatar    string    `json:"avatar"`
+	Balance   uint      `json:"balance"`
+	Token     string    `json:"token,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func RegisterUser(c *gin.Context) {
@@ -100,6 +103,7 @@ func GetAllUser(c *gin.Context) {
 	c.JSON(http.StatusOK, users) // Return the game as JSON
 }
 
+// 根据token获取自己信息
 func GetUserInfo(c *gin.Context) {
 	// 从上下文中获取用户信息
 	user, exists := c.Get("user")
@@ -116,12 +120,25 @@ func GetUserInfo(c *gin.Context) {
 		utils.RespondFailed(c, "Invalid user data")
 		return
 	}
-
 	data := UserInfo{
-		ID:       userInfo.ID,
-		Username: userInfo.Username,
-		NickName: userInfo.NickName,
-		Balance:  userInfo.Balance,
+		ID:        userInfo.ID,
+		Username:  userInfo.Username,
+		NickName:  userInfo.NickName,
+		Balance:   userInfo.Balance,
+		Avatar:    userInfo.Avatar,
+		CreatedAt: userInfo.CreatedAt,
 	}
 	utils.RespondSuccess(c, data, nil)
+}
+
+func GetAuthorByID(c *gin.Context) {
+	id := c.Param("id") // 从路径参数中获取 id
+	user, err := services.GetUserByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
+		return
+	}
+
+	utils.RespondSuccess(c, user, nil)
+
 }

@@ -16,6 +16,7 @@ var jwtKey = []byte(os.Getenv("JWT_SECRET")) // 使用环境变量获取密钥
 // Claims 是自定义的 JWT Claims 结构体
 type Claims struct {
 	Username string `json:"username"`
+	ID       uint   `json:"id"`
 	jwt.StandardClaims
 }
 
@@ -40,6 +41,15 @@ func GetUserByUsername(username string) (*models.User, error) {
 	}
 	return &user, nil
 }
+func GetUserByID(id string) (*models.User, error) {
+	var user models.User
+
+	if err := config.DB.Where("id = ?", id).First(&user).Error; err != nil {
+		return nil, errors.New("user not found")
+	}
+
+	return &user, nil
+}
 
 // CheckPassword 验证密码（实际项目中应该加密存储并验证）
 func CheckPassword(storedPassword, providedPassword string) bool {
@@ -53,6 +63,7 @@ func GenerateToken(user models.User) (string, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		Username: user.Username,
+		ID:       user.ID,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expirationTime.Unix(), // 使用 Unix 时间戳表示过期时间
 			Issuer:    "my-gin-project",      // 可以设置为应用名称

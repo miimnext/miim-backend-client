@@ -2,28 +2,27 @@ package middlewares
 
 import (
 	"go_core/services"
-	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
 // AuthMiddleware 验证 JWT Token 是否有效
+// AuthMiddleware 验证 JWT Token 是否有效
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// 从 Authorization header 中提取 token
 		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"message": "Authorization header is required"})
-			c.Abort()
+			c.Next()
 			return
 		}
 
 		// JWT 的格式通常是 "Bearer <token>"
 		parts := strings.Split(tokenString, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid token format"})
-			c.Abort()
+			// 如果 token 格式不正确，可以记录日志但不拦截请求
+			c.Next()
 			return
 		}
 		tokenString = parts[1]
@@ -31,8 +30,9 @@ func AuthMiddleware() gin.HandlerFunc {
 		// 验证 token
 		claims, err := services.ValidateToken(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
-			c.Abort()
+			// 如果验证失败，也不拦截请求，只是打印错误日志
+			// c.JSON(http.StatusUnauthorized, gin.H{"message": err.Error()})
+			c.Next()
 			return
 		}
 

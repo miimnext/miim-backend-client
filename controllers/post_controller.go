@@ -51,26 +51,9 @@ func GetAllPosts(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query posts"})
 		return
 	}
-	// 从上下文中获取用户信息
-	user, exists := c.Get("user")
-	if exists {
+	// 获取用户点赞状态
+	LoadUserPostReactions(c, posts)
 
-		userInfo, ok := user.(*services.Claims)
-		if ok {
-
-			// 用户已登录，加载用户的点赞状态
-			for i := range posts {
-				reactionType, err := services.GetPostReactionByUser(posts[i].ID, userInfo.ID)
-				if err != nil {
-					// c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to check post reaction"})
-					// return
-					// fmt.Println("333333333")
-				}
-				fmt.Println("333333333", reactionType)
-				posts[i].ReactionType = reactionType // 可选：保存点赞/点踩的类型
-			}
-		}
-	}
 	utils.RespondSuccess(c, gin.H{"list": posts}, &utils.Pagination{
 		Page:     pagination.Page,
 		PageSize: pagination.PageSize,
@@ -115,13 +98,13 @@ func GetPostsByUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to query posts"})
 		return
 	}
-
+	// 获取用户点赞状态
+	LoadUserPostReactions(c, posts)
 	utils.RespondSuccess(c, gin.H{"list": posts}, &utils.Pagination{
 		Page:     pagination.Page,
 		PageSize: pagination.PageSize,
 		Total:    totalPosts,
 	})
-
 }
 
 // DeletePost 处理删除文章的请求
@@ -153,6 +136,7 @@ func DeletePost(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Post deleted successfully"})
 }
 
+// 获取标签
 func GetTags(c *gin.Context) {
 	var tags []models.Tag // 定义一个用于存储查询结果的切片
 	// 查询所有 tags
@@ -164,6 +148,7 @@ func GetTags(c *gin.Context) {
 	utils.RespondSuccess(c, tags, nil)
 }
 
+// 获取分类集合
 func GetCategorys(c *gin.Context) {
 	var category []models.Category // 定义一个用于存储查询结果的切片
 	// 查询所有 tags
@@ -173,4 +158,26 @@ func GetCategorys(c *gin.Context) {
 		return
 	}
 	utils.RespondSuccess(c, category, nil)
+}
+
+// 获取用户对文章的点赞状态
+func LoadUserPostReactions(c *gin.Context, posts []models.Post) {
+	user, exists := c.Get("user")
+	if !exists {
+		return
+	}
+
+	userInfo, ok := user.(*services.Claims)
+	if !ok {
+		return
+	}
+
+	// 遍历文章并获取用户的点赞状态
+	for i := range posts {
+		reactionType, err := services.GetPostReactionByUser(posts[i].ID, userInfo.ID)
+		if err != nil {
+			continue // 忽略错误，确保页面可用
+		}
+		posts[i].ReactionType = reactionType
+	}
 }

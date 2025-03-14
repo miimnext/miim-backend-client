@@ -16,5 +16,5 @@ func main() {
 	r := routes.SetupRouter()
 
 	// 运行服务
-	r.Run(":8081")
+	r.Run("0.0.0.0:8081")
 }

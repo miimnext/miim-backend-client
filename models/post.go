@@ -13,6 +13,7 @@ type Post struct {
 	AuthorID     uint           `json:"-"`                                                 // Hidden from JSON response
 	ReactionType ReactionType   `gorm:"type:enum('like','dislike','none');default:'none'"` // Enum default value
 	Likes        int            `json:"likes" gorm:"default:0"`
+	CommentCount int            `json:"comment_count" gorm:"default:0"`
 	Author       User           `gorm:"foreignKey:AuthorID" json:"author"`
 	CategoryID   uint           `json:"category_id"`
 	Category     Category       `gorm:"foreignKey:CategoryID" json:"category"` // Added Category relation
@@ -20,7 +21,7 @@ type Post struct {
 	Image        string         `json:"image" gorm:"default:''"`               // Default empty string for image
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`
-	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"` // Hidden DeletedAt from JSON response
+	DeletedAt    gorm.DeletedAt `gorm:"index" json:"-"`
 }
 
 type Tag struct {

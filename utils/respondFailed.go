@@ -11,10 +11,16 @@ type ResponseData struct {
 	Message string `json:"message"`
 }
 
-func RespondFailed(c *gin.Context, message string) {
-	// 构建基础的响应数据
+func RespondFailed(c *gin.Context, message string, code ...int) {
+	// 如果传入了 code 参数，就使用它，否则默认 404
+	respCode := 404
+	if len(code) > 0 && code[0] != 0 {
+		respCode = code[0]
+	}
+
+	// 构建响应数据
 	response := ResponseData{
-		Code:    404,
+		Code:    respCode,
 		Message: message,
 	}
 

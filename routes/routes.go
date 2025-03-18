@@ -45,20 +45,29 @@ func SetupRouter() *gin.Engine {
 	protected.GET("/postsByUser/:id", controllers.GetPostsByUser) // 根据用户 ID 获取文章
 	protected.GET("/posts/:id", controllers.GetPostByID)          // 根据文章 ID 获取单篇文章
 	protected.DELETE("/posts/:id", controllers.DeletePost)        // 根据文章 ID 删除文章
-
+	protected.GET("/comments/post/:post_id", controllers.GetCommentsByID)
+	protected.POST("/comments", controllers.CreateCommentHandler) // 创建评论
 	// 获取标签和分类
 	protected.GET("/tags", controllers.GetTags)           // 获取所有标签
 	protected.GET("/categorys", controllers.GetCategorys) // 获取所有分类
-	{
 
+	// 评论相关路由
+	{
 		// 需要 token 验证的路由
-		protected.Use(middlewares.TokenAuthMiddleware())            // 验证用户的 token
-		protected.POST("/posts", controllers.CreatePost)            // 创建文章
-		protected.POST("/posts/reaction", controllers.PostReaction) // 点赞/取消点赞
-		protected.GET("/userinfo", controllers.GetUserInfo)         // 获取当前用户信息
-		protected.GET("/users", controllers.GetAllUser)             // 获取所有用户
-		protected.POST("/upload", controllers.UploadFile)           // 上传文件
+		protected.Use(middlewares.TokenAuthMiddleware()) // 验证用户的 token
+		// protected.POST("/comments", controllers.CreateCommentHandler) // 创建评论
+		// 获取某个帖子的所有评论
+		protected.PUT("/comments/:comment_id", controllers.UpdateCommentHandler)                  // 更新评论内容
+		protected.DELETE("/comments/:comment_id/post/:post_id", controllers.DeleteCommentHandler) // 删除评论
 	}
+
+	// 其他需要身份验证的路由
+	protected.POST("/posts", controllers.CreatePost)              // 创建文章
+	protected.POST("/posts/reaction", controllers.PostReaction)   // 点赞/取消点赞
+	protected.GET("/userinfo", controllers.GetUserInfo)           // 获取当前用户信息
+	protected.GET("/users", controllers.GetAllUser)               // 获取所有用户
+	protected.POST("/upload", controllers.UploadFile)             // 上传文件
+	protected.POST("/UpdateUserInfo", controllers.UpdateUserInfo) // 更新用户信息
 
 	return r // 返回配置好的路由引擎
 }

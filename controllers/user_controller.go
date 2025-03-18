@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"go_core/config"
 	"go_core/models"
 	"go_core/services"
 	"go_core/utils"
@@ -93,13 +94,11 @@ func LoginUser(c *gin.Context) {
 }
 
 func GetAllUser(c *gin.Context) {
-	// Call the service to get the game
 	users, err := services.GetAllUser()
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
 		return
 	}
-
 	c.JSON(http.StatusOK, users) // Return the game as JSON
 }
 
@@ -135,10 +134,46 @@ func GetAuthorByID(c *gin.Context) {
 	id := c.Param("id") // 从路径参数中获取 id
 	user, err := services.GetUserByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Game not found"})
+		utils.RespondFailed(c, "Invalid id ")
+		return
+	}
+	utils.RespondSuccess(c, user, nil)
+
+}
+
+func UpdateUserInfo(c *gin.Context) {
+	// 从上下文中获取用户信息
+	user, exists := c.Get("user")
+	if !exists {
+		// 如果用户信息不存在，返回 404 错误
+		utils.RespondFailed(c, "User not found")
 		return
 	}
 
-	utils.RespondSuccess(c, user, nil)
+	// 假设 user 是 *models.User 类型，进行类型断言
+	userInfo, ok := user.(*models.User)
+	if !ok {
+		// 如果类型断言失败，返回 400 错误
+		utils.RespondFailed(c, "Invalid user data")
+		return
+	}
 
+	// 获取用户传来的更新数据（只包含更新的字段）
+	var updateData map[string]interface{} // 使用 map 来接收传入的字段
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		utils.RespondFailed(c, "Invalid input data")
+		return
+	}
+
+	// 使用更新的数据直接更新数据库
+	if err := config.DB.Model(&models.User{}).Where("id = ?", userInfo.ID).Updates(updateData).Error; err != nil {
+		// 如果数据库更新失败，返回 500 错误
+		utils.RespondFailed(c, "Failed to update user information")
+		return
+	}
+
+	// 更新成功，返回成功响应
+	utils.RespondSuccess(c, gin.H{
+		"message": "User information updated successfully",
+	}, nil)
 }

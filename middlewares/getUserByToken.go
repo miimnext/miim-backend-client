@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"go_core/services"
+	"go_core/utils"
 	"net/http"
 	"strings"
 
@@ -30,7 +31,8 @@ func TokenAuthMiddleware() gin.HandlerFunc {
 		// 验证 Token 并获取用户信息
 		user, err := services.GetCurrentUser(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid or expired token"})
+			// c.JSON(http.StatusUnauthorized, gin.H{"message": "Invalid or expired token"})
+			utils.RespondFailed(c, "Invalid or expired token", 401)
 			c.Abort()
 			return
 		}
